@@ -25,6 +25,11 @@ class GUI:
         self.idx_estacao_vermelha = None
         self.info_visivel = False
         self.pausado = False  
+        self.tempo_simulacao = 0.0 # Tempo Lógico/Virtual
+        
+        # Guarda a exata hora em que a interface nasceu para calcular o tempo físico
+        self.ultimo_relogio_maquina = time.time()
+        self.tempo_real_ativo = 0.0
         
         # Variáveis para o Log da UE 0
         self.tempo_simulacao = 0.0       
@@ -35,7 +40,8 @@ class GUI:
         self._setup_interface()
         self._criar_elementos()
         
-        self.clock_simulacao()
+
+        
 
     def _setup_interface(self):
         self.main_frame = tk.Frame(self.root)
@@ -51,6 +57,27 @@ class GUI:
             self.simulation_frame, width=self.width, height=self.height, bg="white"
         )
         self.canvas.pack()
+
+        # Escuta o clique com o botão esquerdo do mouse
+        self.canvas.bind("<Button-1>", self.ao_clicar_mouse)
+
+        #  RELÓGIOS
+        self.frame_relogios = tk.Frame(self.chart_frame, pady=5)
+        self.frame_relogios.pack(anchor="nw")
+
+        # Relógio do Simulador (Tempo Virtual)
+        self.lbl_relogio_sim = tk.Label(self.frame_relogios, text="Simulation Time: 00:00:00", 
+                                        font=("Consolas", 11, "bold"), fg="blue")
+        self.lbl_relogio_sim.pack(anchor="nw")
+
+        # Relógio Real (Tempo de execução ativo)
+        self.lbl_relogio_real = tk.Label(self.frame_relogios, text="Real Time: 00:00:00", 
+                                         font=("Consolas", 10, "bold"), fg="green")
+        self.lbl_relogio_real.pack(anchor="nw")
+        
+        # Variável para o tempo real ativo
+        self.tempo_real_ativo = 0.0
+        
 
         # BARRA LATERAL 
         self.title_ue = tk.Label(self.chart_frame, text=f"UE {self.ue_foco_dados.id} Data", font=("Arial", 14, "bold"))
@@ -95,6 +122,9 @@ class GUI:
         
         self.lbl_global_total = tk.Label(self.info_frame, text="Total Location Updates (Todas UEs): 0", fg="purple", anchor="w")
         self.lbl_global_total.pack(anchor="w", padx=5, pady=5)
+
+        self.lbl_global_paging = tk.Label(self.info_frame, text="Total Paging messages (Todas UEs): 0", fg="darkorange", anchor="w")
+        self.lbl_global_paging.pack(anchor="w", padx=5, pady=2)
 
        
         # SEÇÃO 2 (INFORMAÇÕES UE 0)
@@ -226,7 +256,7 @@ class GUI:
         # VERIFICA STATUS DA LIGAÇÃO 
         if ue.em_ligacao and not self.ue0_estava_em_ligacao:
             # Ligação acabou de começar
-            mensagem = f"[{self.tempo_simulacao:.1f}s] LIGAÇÃO INICIADA (10s)\n"
+            mensagem = f"[{self.tempo_simulacao:.1f}s] LIGAÇÃO INICIADA\n"
             self.log_text.insert(tk.END, mensagem)
             self.log_text.see(tk.END)
             self.ue0_estava_em_ligacao = True
@@ -246,6 +276,9 @@ class GUI:
         
         total_pagings = getattr(ue, 'total_pagings', 0)
         self.lbl_ue0_paging.config(text=f"Total Paging messages: {total_pagings}")
+
+        soma_paging_global = sum(u.total_pagings for u in self.ues)
+        self.lbl_global_paging.config(text=f"Total Paging messages (Todas UEs): {soma_paging_global}")
 
     def _atualizar_tabela(self, ue):
         sinais = ue.get_sinais()
@@ -307,29 +340,25 @@ class GUI:
             self._atualizar_cor_triangulo(ue_obj)
             
             self._atualizar_log_ue0(ue_obj)
+    
+    def ao_clicar_mouse(self, event):
+        """Pega a coordenada (X, Y) do clique e define como destino da UE 0."""
+        # event.x e event.y contêm a exata posição onde o mouse clicou no Canvas
+        if not self.pausado:
+            self.ue_foco_dados.set_destiny((event.x, event.y))
+
+    def formatar_tempo(self, segundos):
+        """Converte segundos em formato HH:MM:SS"""
+        m, s = divmod(int(segundos), 60)
+        h, m = divmod(m, 60)
+        return f"{h:02d}:{m:02d}:{s:02d}"
+
+    def atualizar_displays_relogio(self):
+        #Atualiza os textos dos labels de tempo
+        self.lbl_relogio_sim.config(text=f"Simulation Time: {self.formatar_tempo(self.tempo_simulacao)}")
+        self.lbl_relogio_real.config(text=f"Real Time: {self.formatar_tempo(self.tempo_real_ativo)}")
 
    
-    def clock_simulacao(self):
-        if not self.pausado:
-            total_global = 0
-            
-            for ue in self.ues:
-                ue.executar_rodada() 
-                total_global += ue.get_total_updates()
-            
-            self.lbl_global_total.config(text=f"Total Location Updates (Todas UEs): {total_global}")
-            
-            
-            for i, est in enumerate(self.estacoes):
-                try:
-                    
-                    qtd = est.get_numero_ues_acampadas() 
-                except AttributeError:
-                    qtd = 0 
-                    
-                txt_id = self.ids_textos_contagem[i]
-                self.canvas.itemconfig(txt_id, text=f"{qtd} UEs")
-            
-            self.tempo_simulacao += 0.1
-        
-        self.root.after(100, self.clock_simulacao)
+   
+
+   

@@ -17,6 +17,20 @@ config = configparser.ConfigParser()
 config.read(arquivo_escolhido)
 
 # ==========================================
+# CONFIGURAÇÕES DE TEMPO E INTERFACE
+# ==========================================
+
+# A taxa de atualização da interface gráfica (em milissegundos)
+# 100 ms = a tela pisca a cada 0.1 segundos reais
+TICK_TKINTER_MS = 100
+
+# ==========================================
+# CÁLCULO AUTOMÁTICO DO DELTA T (O "Quantum")
+# ==========================================
+# Ex: 100 / 1000 = 0.1 segundos virtuais por rodada.
+DELTA_T = 0.1
+
+# ==========================================
 # LENDO CONFIGURAÇÕES DA ÁREA (CANVAS)
 # ==========================================
 AREA_LARGURA = config.getint('CANVAS', 'AREA_LARGURA')

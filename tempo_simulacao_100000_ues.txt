@@ -1,0 +1,8 @@
+====================================================
+         RELATÓRIO DE TEMPO E RECURSOS              
+====================================================
+Quantidade de UEs:          100000
+Quantum:          0.1 segundos/rodada
+Tempo Virtual Processado:   7.90 segundos
+Tempo Real Decorrido:       38.54 segundos
+Pico de Memória RAM (top):  202.11 MB

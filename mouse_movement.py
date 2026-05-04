@@ -1,30 +1,21 @@
-import random
 import math
 from movement_model import movement_model
 import config
 
-
-class random_waypoint(movement_model):
+class mouse_movement(movement_model):
     def __init__(self):
         pass
 
-    def _novo_destino(self, width, height):
-        """Gera um novo ponto destino aleatório."""
-        x = random.randint(0, width)
-        y = random.randint(0, height)
-        return (x, y)
-
     def mover(self, ue, width, height):
-        """Move a UE em direção a um destino aleatório."""
+        """Move a UE em direção ao destino escolhido pelo clique do mouse."""
         
+        # Se não existe destino (ainda não clicou ou já chegou), a UE fica parada.
+        if ue.get_destiny() is None:
+            return
+
         vel = ue.get_velocidade() * config.DELTA_T
         x = ue.get_x()
         y = ue.get_y()
-
-        # Se ainda não existe destino, escolhe um
-        if ue.get_destiny() is None:
-            ue.set_destiny(self._novo_destino(width, height))
-
         dest_x, dest_y = ue.get_destiny()
 
         # Calcula distância até o destino
@@ -34,10 +25,10 @@ class random_waypoint(movement_model):
 
         # Se chegou no destino (ou está muito perto)
         if distancia < vel:
-            # Chegou -> define novo destino
+            # Chegou -> Crava na posição e apaga o destino para ela parar
             ue.set_x(dest_x)
             ue.set_y(dest_y)
-            ue.set_destiny(self._novo_destino(width, height))
+            ue.set_destiny(None)
             return
 
         # Movimento normal (vetor unitário)
@@ -47,4 +38,3 @@ class random_waypoint(movement_model):
         # Atualiza posição
         ue.set_x(x)
         ue.set_y(y)
-

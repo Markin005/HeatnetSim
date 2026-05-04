@@ -33,19 +33,35 @@ class ue:
         self.estacoes_em_paging = []
         self.momento_paging = None
 
+        self.ultimo_segundo_verificado = -1
+        self.slot_chamada = random.randint(0, 359) # 10 chamdas em uma 1 horas = 1 chamadada em 6 minutos(360)
+      
+
     def location_update(self):
         pass
 
     def registrar_callback_visual(self, funcao):
         self.funcao_atualizar_tela = funcao
 
-    def executar_rodada(self):
-        # Cálculos
+    def executar_rodada(self, tempo_simulacao):
         self._calcular_fisica_e_radio()
 
-        # Atualizar GUI
+        segundo_atual = int(tempo_simulacao)
+        segundos_passados = segundo_atual - self.ultimo_segundo_verificado
+
+        if segundos_passados > 0:
+            for _ in range(segundos_passados):
+                if not self.em_ligacao:
+                    valor_sorteado = random.randint(0, 359)
+                    
+                    if valor_sorteado == self.slot_chamada:
+                        self.fazer_ligacao()
+                        break 
+            
+            self.ultimo_segundo_verificado = segundo_atual
+
         if self.funcao_atualizar_tela:
-            self.funcao_atualizar_tela(self) 
+            self.funcao_atualizar_tela(self)
 
     def _calcular_fisica_e_radio(self):
         self.movement.mover(self, config.AREA_LARGURA, config.AREA_ALTURA)
@@ -149,7 +165,7 @@ class ue:
                     self.reselection()
     
     def fazer_ligacao(self):
-        """Inicia uma chamada e dispara o Paging na rede."""
+        #Inicia uma chamada e dispara o Paging na rede.
         if not self.em_ligacao:
             # 1. DISPARA O PAGING NA LOCATION AREA ATUAL
             paginadas = []
@@ -169,8 +185,8 @@ class ue:
     def _rotina_ligacao(self):
         self.em_ligacao = True
         
-        # Fica 10 segundos "em ligação"
-        time.sleep(10) 
+        # Fica 5 segundos "em ligação"
+        time.sleep(5) 
         
         self.em_ligacao = False
                     
