@@ -7,7 +7,6 @@ class mouse_movement(movement_model):
         pass
 
     def mover(self, ue, width, height):
-        """Move a UE em direção ao destino escolhido pelo clique do mouse."""
         
         # Se não existe destino (ainda não clicou ou já chegou), a UE fica parada.
         if ue.get_destiny() is None:

@@ -1,5 +1,6 @@
 import sys
 import configparser
+import ast  # ADICIONADO: Necessário para converter a string do .ini em uma lista real de tuplas
 
 # 1. Verifica se o usuário digitou o nome do arquivo no terminal
 if len(sys.argv) < 2:
@@ -22,7 +23,7 @@ config.read(arquivo_escolhido)
 
 # A taxa de atualização da interface gráfica (em milissegundos)
 # 100 ms = a tela pisca a cada 0.1 segundos reais
-TICK_TKINTER_MS = 100
+TICK_TKINTER_MS = 1
 
 # ==========================================
 # CÁLCULO AUTOMÁTICO DO DELTA T (O "Quantum")
@@ -51,6 +52,18 @@ quantidade_ue = config.getint('UE', 'QUANTIDADE_UE')
 ESTACAO_SIMBOLO_TAMANHO = config.getint('Configuracoes_Gerais', 'ESTACAO_SIMBOLO_TAMANHO')
 NUMERO_VIZINHAS = config.getint('Configuracoes_Gerais', 'NUMERO_VIZINHAS')
 
+INTERFACE_GRAFICA = config.getboolean('Configuracoes_Gerais', 'INTERFACE')
+
+# Lê se a posição é aleatória ou fixa (padrão é False caso não exista no .ini)
+POSICAO_ALEATORIA = config.getboolean('Configuracoes_Gerais', 'POSICAO_ALEATORIA', fallback=False)
+
+MODO_SIMULACAO = config.get('Configuracoes_Gerais', 'MODO_SIMULACAO', fallback='forca_bruta').strip().lower()
+NUM_SIMULACOES_ESTATISTICA = config.getint('Configuracoes_Gerais', 'NUM_SIMULACOES_ESTATISTICA', fallback=5)
+
+# ADICIONADO: Lê a lista de posições fixas do .ini e converte de string para uma lista de tuplas
+posicoes_str = config.get('Configuracoes_Gerais', 'POSICOES_FIXAS', fallback='[(100,100), (200,200), (300,300)]')
+POSICOES_FIXAS = ast.literal_eval(posicoes_str)
+
 # ==========================================
 # LENDO ESTAÇÕES INDIVIDUAIS
 # ==========================================
@@ -65,11 +78,25 @@ for section in config.sections():
         est_dict['ALTURA_ANTENA_ESTACAO'] = config.getfloat(section, 'ALTURA_ANTENA_ESTACAO')
         est_dict['FREQUENCIA'] = config.getfloat(section, 'FREQUENCIA')
         est_dict['HISTERESE'] = config.getfloat(section, 'HISTERESE')
-        est_dict['LOCATION_AREA'] = config.getint(section, 'LOCATION_AREA')
         est_dict['NOISE_FLOOR'] = config.getfloat(section, 'NOISE_FLOOR')
         
-        cord_str = config.get(section, 'CORD').replace('(', '').replace(')', '')
-        x, y = map(float, cord_str.split(','))
-        est_dict['CORD'] = (x, y)
+        # Lê o TAC como inteiro
+        est_dict['TAC'] = config.getint(section, 'TAC')
+        
+        # Lê a TAC_LIST como string, separa por vírgula e converte para lista de inteiros
+        tac_list_str = config.get(section, 'TAC_LIST')
+        est_dict['TAC_LIST'] = [int(x.strip()) for x in tac_list_str.split(',')]
+        
+        # REMOVIDO: A leitura individual de 'CORD' foi removida daqui, pois agora as 
+        # posições são injetadas diretamente pelo main.py usando a lista POSICOES_FIXAS.
+
+        # ==========================================
+        # LENDO CONFIGURAÇÕES DE FADING
+        # ==========================================
+        # Usa 'fallback' para não dar erro se o arquivo .ini não tiver essas linhas
+        est_dict['FADING_HABILITADO'] = config.getboolean(section, 'FADING_HABILITADO', fallback=False)
+        est_dict['FADING_SIGMA_DB'] = config.getfloat(section, 'FADING_SIGMA_DB', fallback=8.0)
+        est_dict['FADING_TEMPO_CORRELACAO'] = config.getfloat(section, 'FADING_TEMPO_CORRELACAO', fallback=5.0)
+        est_dict['FADING_TEMPO_ESTABILIDADE'] = config.getfloat(section, 'FADING_TEMPO_ESTABILIDADE', fallback=0.5)
         
         ESTACOES_CONFIG.append(est_dict)
